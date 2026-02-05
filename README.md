@@ -15,12 +15,12 @@ Optional: **whiptail** for a TUI menu (otherwise a simple text menu is used).
 ./ldap-lab.sh
 ```
 
-Choose **1** to start the stack, then **4** to load sample users and groups. Use **7** for connection details and **8** for the web UI. The UI runs in guest mode (already logged in as admin; no login form).
+Choose **1** to start the stack, then **4** to load sample users and groups. Use **7** for connection details. Use **8** to open the web UI in your browser (or **9** to see the UI URL and guest-mode hint).
 
 ## What you get
 
 - **OpenLDAP** (osixia/openldap) on `localhost:389` (LDAP) and `localhost:636` (LDAPS)
-- **phpLDAPadmin** on `http://localhost:8086`
+- **phpLDAPadmin** (v2) at `http://localhost:8086` — see [Web UI](#web-ui-phpldapadmin) below
 - Default domain: `dc=example,dc=com`
 - Sample **OUs**: `users`, `groups`, `svc`
 - Sample **users**: jim, alice, bob (password: `password`)
@@ -29,17 +29,24 @@ Choose **1** to start the stack, then **4** to load sample users and groups. Use
 
 ## Menu options
 
-| Option | Action |
-|--------|--------|
-| 1 | Start LDAP + UI (Docker Compose up) |
-| 2 | Stop stack (down) |
-| 3 | Reset stack and **delete volumes** (wipes data) |
-| 4 | Load sample users/groups from bootstrap LDIF |
+| # | Action |
+|---|--------|
+| 1 | Start LDAP + UI |
+| 2 | Stop (down) |
+| 3 | Reset (down -v, nukes data) |
+| 4 | Load sample users and groups (LDIF) |
 | 5 | Run quick tests (ldapwhoami, ldapsearch) |
-| 6 | Show container status |
-| 7 | Show connection info (URLs, DNs, passwords) |
-| 8 | UI / login info |
-| 9 | Exit |
+| 6 | Status |
+| 7 | Show connection info |
+| 8 | Open LDAP UI in browser |
+| 9 | UI login info |
+| 10 | Exit |
+
+## Web UI (phpLDAPadmin)
+
+The UI is at **http://localhost:8086**. From the menu, **8** opens that URL in your default browser; **9** prints the URL and a short hint.
+
+The UI runs in **guest mode**: it is already connected as `cn=admin,dc=example,dc=com`. There is no login form — open the URL and you can browse and edit the directory. This avoids the rootdn login limitation in phpLDAPadmin v2.
 
 ## Generated files
 
