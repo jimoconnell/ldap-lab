@@ -15,7 +15,7 @@ Optional: **whiptail** for a TUI menu (otherwise a simple text menu is used).
 ./ldap-lab.sh
 ```
 
-Choose **1** to start the stack, then **4** to load sample users and groups. Use **7** for connection details and **8** for the web UI login.
+Choose **1** to start the stack, then **4** to load sample users and groups. Use **7** for connection details and **8** for the web UI. The UI runs in guest mode (already logged in as admin; no login form).
 
 ## What you get
 
@@ -38,7 +38,7 @@ Choose **1** to start the stack, then **4** to load sample users and groups. Use
 | 5 | Run quick tests (ldapwhoami, ldapsearch) |
 | 6 | Show container status |
 | 7 | Show connection info (URLs, DNs, passwords) |
-| 8 | Show UI login info |
+| 8 | UI / login info |
 | 9 | Exit |
 
 ## Generated files
@@ -48,7 +48,7 @@ The script creates a `ldap-lab/` directory in the current working directory (sam
 - `compose.yml` – Docker Compose for LDAP + phpLDAPadmin
 - `bootstrap.ldif` – sample users, groups, and service account
 
-These are created on first run if missing. The directory is listed in `.gitignore` so it is not committed.
+The script overwrites `compose.yml` on every run; `bootstrap.ldif` is only created if missing. The directory is listed in `.gitignore` so it is not committed.
 
 ## License
 

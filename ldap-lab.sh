@@ -16,6 +16,8 @@ LDAP_ADMIN_PASSWORD="admin"
 PHPLDAPADMIN_PORT="8086"
 LDAP_PORT="389"
 LDAPS_PORT="636"
+# Fixed APP_KEY for lab sessions (phpLDAPadmin v2); replace in production
+PHPLDAPADMIN_APP_KEY="base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
 
 # ---------------------------
 # Helpers
@@ -37,8 +39,7 @@ compose_cmd() {
 ensure_workdir() {
   mkdir -p "${WORKDIR}"
 
-  if [[ ! -f "${COMPOSE_FILE}" ]]; then
-    cat > "${COMPOSE_FILE}" <<YAML
+  cat > "${COMPOSE_FILE}" <<YAML
 services:
   ldap:
     image: osixia/openldap:1.5.0
@@ -55,20 +56,24 @@ services:
       - ldap_config:/etc/ldap/slapd.d
 
   ldap-ui:
-    image: osixia/phpldapadmin:0.9.0
+    image: phpldapadmin/phpldapadmin:2.0.0
     container_name: test-ldap-ui
     environment:
-      PHPLDAPADMIN_LDAP_HOSTS: "ldap"
+      LDAP_HOST: "ldap"
+      LDAP_BASE_DN: "${LDAP_BASE_DN}"
+      LDAP_USERNAME: "cn=admin,${LDAP_BASE_DN}"
+      LDAP_PASSWORD: "${LDAP_ADMIN_PASSWORD}"
+      LDAP_ALLOW_GUEST: "true"
+      APP_KEY: "${PHPLDAPADMIN_APP_KEY}"
     depends_on:
       - ldap
     ports:
-      - "${PHPLDAPADMIN_PORT}:80"
+      - "${PHPLDAPADMIN_PORT}:8080"
 
 volumes:
   ldap_data:
   ldap_config:
 YAML
-  fi
 
   if [[ ! -f "${LDIF_FILE}" ]]; then
     cat > "${LDIF_FILE}" <<'LDIF'
@@ -159,7 +164,7 @@ Users:
 Groups OU:     ou=groups,${LDAP_BASE_DN}
 Nested group:  cn=engineering contains developers and ops
 
-UI:            http://localhost:${PHPLDAPADMIN_PORT}
+UI:            http://localhost:${PHPLDAPADMIN_PORT} (guest mode: no login)
 EOF
 }
 
@@ -199,7 +204,28 @@ wait_for_ldap() {
   done
   return 1
 }
+open_browser() {
+  local url="$1"
 
+  if command -v open >/dev/null 2>&1; then
+    # macOS
+    open "$url"
+  elif command -v xdg-open >/dev/null 2>&1; then
+    # Linux
+    xdg-open "$url"
+  elif command -v wslview >/dev/null 2>&1; then
+    # WSL
+    wslview "$url"
+  else
+    echo "No known browser opener found."
+    echo "Open manually: $url"
+  fi
+}
+open_ui() {
+  local url="http://localhost:${PHPLDAPADMIN_PORT}"
+  echo "Opening $url"
+  open_browser "$url"
+}
 load_sample_data() {
   if ! docker ps --format '{{.Names}}' | grep -qx "test-ldap"; then
     echo "LDAP container not running. Start stack first."
@@ -250,8 +276,7 @@ test_searches() {
 
 open_ui_hint() {
   echo "Open in browser: http://localhost:${PHPLDAPADMIN_PORT}"
-  echo "Login DN: cn=admin,${LDAP_BASE_DN}"
-  echo "Password: ${LDAP_ADMIN_PASSWORD}"
+  echo "Guest mode is on: you are already logged in as cn=admin (no login form)."
 }
 
 # ---------------------------
@@ -270,8 +295,9 @@ menu_whiptail() {
       "5" "Run quick tests (ldapwhoami, ldapsearch)" \
       "6" "Status" \
       "7" "Show connection info" \
-      "8" "UI login info" \
-      "9" "Exit" \
+      "8" "Open LDAP UI in browser" \
+      "9" "UI login info" \
+      "10" "Exit" \
       3>&1 1>&2 2>&3)" || return 0
 
     case "${choice}" in
@@ -286,8 +312,9 @@ menu_whiptail() {
       5) test_searches ;;
       6) stack_status | sed 's/$/\r/' | whiptail --textbox /dev/stdin 22 90 ;;
       7) info_text | whiptail --textbox /dev/stdin 22 90 ;;
-      8) open_ui_hint | whiptail --textbox /dev/stdin 12 90 ;;
-      9) return 0 ;;
+      8) open_ui ;;
+      9) open_ui_hint | whiptail --textbox /dev/stdin 12 90 ;;
+      10) return 0 ;;
     esac
   done
 }
@@ -303,8 +330,9 @@ menu_basic() {
     echo "5) Run quick tests (ldapwhoami, ldapsearch)"
     echo "6) Status"
     echo "7) Show connection info"
-    echo "8) UI login info"
-    echo "9) Exit"
+    echo "8) Open LDAP UI in browser"
+    echo "9) UI login info" 
+  echo "10) Exit"
     echo
     read -r -p "Choice: " choice
     case "${choice}" in
@@ -320,8 +348,9 @@ menu_basic() {
       5) test_searches ;;
       6) stack_status ;;
       7) info_text ;;
-      8) open_ui_hint ;;
-      9) return 0 ;;
+      8) open_ui ;;
+      9) open_ui_hint ;;
+      10) return 0 ;;
       *) echo "Invalid choice" ;;
     esac
   done
