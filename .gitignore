@@ -1,0 +1,5 @@
+# macOS
+.DS_Store
+
+# Generated workdir (compose.yml, bootstrap.ldif, volumes)
+ldap-lab/
